@@ -58,19 +58,19 @@ func (r *Router) Handle(method, path string, handler fiber.Handler, middleware .
 }
 
 // Shorcut methods for HTTP verbs
-func (r *Router) Get(path string, handler fiber.Handler, middleware ...Middleware) {
-	r.Handle("GET", path, handler, middleware...)
+func (r *Router) GET(path string, handler fiber.Handler, middleware ...Middleware) {
+	r.Handle(fiber.MethodGet, path, handler, middleware...)
 }
 
-func (r *Router) Post(path string, handler fiber.Handler, middleware ...Middleware) {
+func (r *Router) POST(path string, handler fiber.Handler, middleware ...Middleware) {
 	r.Handle(fiber.MethodPost, path, handler, middleware...)
 }
 
-func (r *Router) Put(path string, handler fiber.Handler, middleware ...Middleware) {
+func (r *Router) PUT(path string, handler fiber.Handler, middleware ...Middleware) {
 	r.Handle(fiber.MethodPut, path, handler, middleware...)
 }
 
-func (r *Router) Delete(path string, handler fiber.Handler, middleware ...Middleware) {
+func (r *Router) DELETE(path string, handler fiber.Handler, middleware ...Middleware) {
 	r.Handle(fiber.MethodDelete, path, handler, middleware...)
 }
 

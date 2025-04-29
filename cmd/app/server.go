@@ -3,6 +3,9 @@ package app
 import (
 	"backend/pkg/config"
 	"backend/pkg/infra/registry"
+	"backend/pkg/infra/storage/postgres"
+	"backend/pkg/migration"
+
 	"backend/pkg/protocol"
 	"context"
 	"errors"
@@ -13,13 +16,18 @@ import (
 )
 
 type Server struct {
-	// postgresDB postgres.DB
-	services []registry.RunFunc
-	log      *zap.Logger
+	postgresDB postgres.DB
+	services   []registry.RunFunc
+	log        *zap.Logger
 }
 
 func NewServer(isStandaloneMode bool) (*Server, error) {
 	cfg, err := config.FromEnv()
+	if err != nil {
+		return nil, err
+	}
+
+	postgresDB, err := postgres.New(migration.New(), cfg.Postgres.ConnectionString())
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +47,9 @@ func NewServer(isStandaloneMode bool) (*Server, error) {
 	}
 
 	return &Server{
-		services: services.GetServices(),
-		log:      zap.L().Named("apiserver"),
+		postgresDB: postgresDB,
+		services:   services.GetServices(),
+		log:        zap.L().Named("apiserver"),
 	}, nil
 }
 

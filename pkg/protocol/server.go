@@ -32,12 +32,15 @@ func NewServer(deps *Dependencies, cfg *config.Config) *Server {
 }
 
 func (s *Server) registerRoutes() {
-	// r := s.Router
+	r := s.Router
 
+	s.NewUserHandler(r)
 }
 
 func (s *Server) Run(ctx context.Context) error {
 	stopCh := ctx.Done()
+
+	s.registerRoutes()
 
 	add := fmt.Sprintf(":%s", s.Dependencies.Cfg.Server.HTTPPort)
 
