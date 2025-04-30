@@ -2,7 +2,9 @@ package protocol
 
 import (
 	"backend/pkg/config"
+	"backend/pkg/identity/user"
 	"backend/pkg/infra/api/routing"
+	"backend/pkg/infra/storage/db"
 	"context"
 	"fmt"
 	"time"
@@ -18,7 +20,10 @@ type Server struct {
 }
 
 type Dependencies struct {
-	Cfg *config.Config
+	Postgres db.DB
+	Cfg      *config.Config
+
+	UserSvc user.Service
 }
 
 func NewServer(deps *Dependencies, cfg *config.Config) *Server {
