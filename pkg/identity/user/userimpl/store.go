@@ -228,3 +228,38 @@ func (s *store) updatePassword(ctx context.Context, entity *user.User) error {
 
 	return nil
 }
+
+func (s *store) getByLoginName(ctx context.Context, loginName string) (*user.User, error) {
+	var result user.User
+
+	rawSQL := `
+		SELECT
+			id,
+			uuid,
+			first_name,
+			last_name,
+			middle_name,
+			login_name,
+			password,
+			status,
+			email,
+			salt,
+			created_by,
+			created_at,
+			updated_by,
+			updated_at
+		FROM "user"
+		WHERE
+			login_name = ?
+	`
+	err := s.db.Get(ctx, &result, rawSQL, loginName)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &result, nil
+}

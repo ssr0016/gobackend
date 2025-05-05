@@ -3,6 +3,7 @@ package userimpl
 import (
 	"backend/pkg/config"
 	"backend/pkg/identity/user"
+	"backend/pkg/infra/api/request"
 	"backend/pkg/infra/storage/db"
 	"backend/pkg/util/encrypt"
 	"context"
@@ -144,7 +145,7 @@ func (s *service) UpdateStatus(ctx context.Context, cmd *user.UpdateStatusComman
 
 func (s *service) UpdatePassword(ctx context.Context, cmd *user.UpdatePasswordCommand) error {
 	now := time.Now().Format(time.RFC3339Nano)
-	// signedInUser, _ := request.GetUserInfo(ctx)
+	signedInUser, _ := request.GetUserInfo(ctx)
 
 	exist, err := s.GetByID(ctx, cmd.ID)
 	if err != nil {
@@ -157,9 +158,9 @@ func (s *service) UpdatePassword(ctx context.Context, cmd *user.UpdatePasswordCo
 	}
 
 	err = s.store.updatePassword(ctx, &user.User{
-		ID:       exist.ID,
-		Password: hashedPassword,
-		// UpdatedBy: &signedInUser.Username,
+		ID:        exist.ID,
+		Password:  hashedPassword,
+		UpdatedBy: &signedInUser.Username,
 		UpdatedAt: &now,
 	})
 	if err != nil {
@@ -167,4 +168,17 @@ func (s *service) UpdatePassword(ctx context.Context, cmd *user.UpdatePasswordCo
 	}
 
 	return nil
+}
+
+func (s *service) GetByLoginName(ctx context.Context, loginName string) (*user.User, error) {
+	result, err := s.store.getByLoginName(ctx, loginName)
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, user.ErrUserNotFound
+	}
+
+	return result, nil
 }

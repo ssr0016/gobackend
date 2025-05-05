@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"backend/pkg/config"
+	"backend/pkg/identity/auth"
 	"backend/pkg/identity/user"
 	"backend/pkg/infra/api/routing"
 	"backend/pkg/infra/storage/db"
@@ -24,6 +25,7 @@ type Dependencies struct {
 	Cfg      *config.Config
 
 	UserSvc user.Service
+	AuthSvc auth.Service
 }
 
 func NewServer(deps *Dependencies, cfg *config.Config) *Server {
@@ -39,6 +41,7 @@ func NewServer(deps *Dependencies, cfg *config.Config) *Server {
 func (s *Server) registerRoutes() {
 	r := s.Router
 
+	s.NewAuthHandler(r)
 	s.NewUserHandler(r)
 }
 

@@ -26,3 +26,12 @@ func HashPassword(password, salt string) (string, error) {
 
 	return base64.RawStdEncoding.EncodeToString(hash), nil
 }
+
+func VerifyPassword(password, salt, hashedPassword string) (bool, error) {
+	newHash, err := HashPassword(password, salt)
+	if err != nil {
+		return false, err
+	}
+
+	return newHash == hashedPassword, nil
+}
