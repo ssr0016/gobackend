@@ -1,7 +1,9 @@
 package protocol
 
 import (
+	"backend/pkg/identity/account"
 	"backend/pkg/identity/user"
+	"backend/pkg/infra/api/middleware"
 	"backend/pkg/infra/api/response"
 	"backend/pkg/infra/api/routing"
 	"strconv"
@@ -9,15 +11,25 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+var (
+	reqOnlyUser = middleware.ForUser(account.Admin)
+	// reqReadUser   = middleware.ForPermission(accesscontrol.ActionReadRole)
+	// reqCreateUser = middleware.ForPermission(accesscontrol.ActionCreateUser)
+	// reqUpdateUser = middleware.ForPermission(accesscontrol.ActionUpdateUser)
+)
+
 func (s *Server) NewUserHandler(r *routing.Router) {
 	admin := r.Group("/api/user")
 
-	admin.POST("/", s.createUser)
-	admin.GET("/", s.searchUser)
-	admin.GET("/:id", s.getUserDetail)
-	admin.PUT("/:id", s.updateUser)
-	admin.PUT("/:id/status", s.updateStatus)
-	admin.PUT("/:id/password", s.updatePassword)
+	// 🚀 No authentication required for user creation
+	admin.Handle(fiber.MethodPost, "/", s.createUser)
+
+	// ✅ Authentication required for other operations
+	admin.Handle(fiber.MethodGet, "/", s.searchUser, reqOnlyUser)
+	admin.Handle(fiber.MethodGet, "/:id", s.getUserDetail, reqOnlyUser)
+	admin.Handle(fiber.MethodPut, "/:id", s.updateUser, reqOnlyUser)
+	admin.Handle(fiber.MethodPut, "/:id/status", s.updateStatus, reqOnlyUser)
+	admin.Handle(fiber.MethodPut, "/:id/password", s.updatePassword, reqOnlyUser)
 }
 
 func (s *Server) createUser(c *fiber.Ctx) error {
@@ -107,7 +119,7 @@ func (s *Server) updateUser(c *fiber.Ctx) error {
 	return response.SuccessMessage(c, "Updated successfully")
 }
 
-func (r *Server) updateStatus(c *fiber.Ctx) error {
+func (s *Server) updateStatus(c *fiber.Ctx) error {
 	var cmd user.UpdateStatusCommand
 
 	idStr := c.Params("id")
@@ -123,20 +135,21 @@ func (r *Server) updateStatus(c *fiber.Ctx) error {
 	}
 
 	cmd.ID = id
-	err = cmd.Status.Validate()
+
+	err = cmd.Validate()
 	if err != nil {
 		return response.SendError(c, fiber.StatusBadRequest, err)
 	}
 
-	err = r.Dependencies.UserSvc.UpdateStatus(c.Context(), &cmd)
+	err = s.Dependencies.UserSvc.UpdateStatus(c.Context(), &cmd)
 	if err != nil {
 		return response.SendError(c, fiber.StatusInternalServerError, err)
 	}
 
-	return response.SuccessMessage(c, "Updated successfully")
+	return response.SuccessMessage(c, "Update status successfully")
 }
 
-func (r *Server) updatePassword(c *fiber.Ctx) error {
+func (s *Server) updatePassword(c *fiber.Ctx) error {
 	var cmd user.UpdatePasswordCommand
 
 	idStr := c.Params("id")
@@ -152,15 +165,16 @@ func (r *Server) updatePassword(c *fiber.Ctx) error {
 	}
 
 	cmd.ID = id
+
 	err = cmd.Validate()
 	if err != nil {
 		return response.SendError(c, fiber.StatusBadRequest, err)
 	}
 
-	err = r.Dependencies.UserSvc.UpdatePassword(c.Context(), &cmd)
+	err = s.Dependencies.UserSvc.UpdatePassword(c.Context(), &cmd)
 	if err != nil {
 		return response.SendError(c, fiber.StatusInternalServerError, err)
 	}
 
-	return response.SuccessMessage(c, "Updated password successfully")
+	return response.SuccessMessage(c, "Update password successfully")
 }

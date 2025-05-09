@@ -2,12 +2,14 @@ package app
 
 import (
 	"backend/pkg/config"
+	"backend/pkg/identity/accesscontrol/accesscontrolimpl"
 	"backend/pkg/identity/auth/auth"
 	"backend/pkg/identity/user/userimpl"
+	"backend/pkg/infra/api/auth/authimpl"
+	"backend/pkg/infra/api/middleware"
 	"backend/pkg/infra/registry"
 	"backend/pkg/infra/storage/postgres"
 	"backend/pkg/migration"
-
 	"backend/pkg/protocol"
 	"context"
 	"errors"
@@ -34,15 +36,35 @@ func NewServer(isStandaloneMode bool) (*Server, error) {
 		return nil, err
 	}
 
+	authSvc, err := authimpl.New()
+	if err != nil {
+		return nil, err
+	}
+
+	contextHandler, err := middleware.New(authSvc)
+	if err != nil {
+		return nil, err
+	}
+	accesscontrolSvc := accesscontrolimpl.NewService(postgresDB, cfg)
+	// roleSvc := roleimpl.NewService(postgresDB, cfg)
 	userSvc := userimpl.NewService(postgresDB, cfg)
-	authSvc := auth.NewService(userSvc, cfg)
+	userAuthSvc := auth.NewService(userSvc, cfg)
+	// movieSvc := movieimpl.NewService(postgresDB, cfg)
+	// categorySvc := categoryimpl.NewService(postgresDB, cfg)
+	// supplierSvc := supplierimpl.NewService(postgresDB, cfg)
 
 	restServer := protocol.NewServer(&protocol.Dependencies{
-		Postgres: postgresDB,
-		Cfg:      cfg,
+		Postgres:       postgresDB,
+		Cfg:            cfg,
+		ContextHandler: contextHandler,
 
 		UserSvc: userSvc,
-		AuthSvc: authSvc,
+		AuthSvc: userAuthSvc,
+		// MovieSvc:         movieSvc,
+		// RoleSvc:          roleSvc,
+		AccessControlSvc: accesscontrolSvc,
+		// CategorySvc:      categorySvc,
+		// SupplierSvc:      supplierSvc,
 	}, cfg)
 
 	services := registry.NewServiceRegistry(
@@ -63,6 +85,9 @@ func NewServer(isStandaloneMode bool) (*Server, error) {
 }
 
 func (s *Server) Run(ctx context.Context) {
+	defer func() {
+		s.postgresDB.Close()
+	}()
 
 	var wg sync.WaitGroup
 	wg.Add(len(s.services))

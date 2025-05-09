@@ -153,6 +153,19 @@ func (cmd *UpdatePasswordCommand) Validate() error {
 	return nil
 }
 
+func (cmd *UpdateStatusCommand) Validate() error {
+	if cmd.ID <= 0 {
+		return ErrInvalidUserID
+	}
+
+	err := cmd.Status.Validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func ValidatePassword(password string) error {
 	if len(password) < 8 {
 		return ErrInvalidPasswordLength

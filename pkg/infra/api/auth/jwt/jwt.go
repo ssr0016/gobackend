@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"backend/pkg/identity/accesscontrol"
 	"backend/pkg/identity/account"
 	"os"
 	"time"
@@ -24,7 +25,8 @@ type Claims struct {
 
 // TokenProvider interface for JWT operations
 type TokenProvider interface {
-	GenerateToken(UserID int64, username string, userType account.Account, expiry time.Duration) (string, error)
+	GenerateToken(userID int64, username string, userType account.Account, expiry time.Duration) (string, error)
+	HasPermission(claims *Claims, requiredPermission accesscontrol.Action) bool
 }
 
 // jwtService implements TokenProvider
@@ -35,11 +37,13 @@ func NewTokenProvider() (TokenProvider, error) {
 	return &jwtService{}, nil
 }
 
+// GenerateToken creates a signed JWT token
 func (j *jwtService) GenerateToken(userID int64, username string, userType account.Account, expiry time.Duration) (string, error) {
 	claims := Claims{
 		UserID:   userID,
 		Username: username,
 		UserType: userType,
+		// Permissions: permissions,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -73,4 +77,14 @@ func ValidateToken(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+// HasPermission checks if a user has a specific permission
+func (j *jwtService) HasPermission(claims *Claims, requiredPermission accesscontrol.Action) bool {
+	// for _, perm := range claims.Permissions {
+	// 	if perm == requiredPermission {
+	// 		return true
+	// 	}
+	// }
+	return false
 }
